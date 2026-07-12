@@ -208,47 +208,35 @@ jobs:
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}  # <--- AGREGA ESTA LÍNEA
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region:            ${{ secrets.AWS_REGION }}
 
-      # ── Step 10: Deploy service app ───────────────────────────
-      - name: "Deploy — forzar nuevo despliegue netmonitor-app"
+      # ── Step 10: Deploy del servicio combinado ────────────────
+      - name: "Deploy — forzar nuevo despliegue del servicio combinado"
         run: |
-          echo "Iniciando deploy del service: ${{ secrets.ECS_SERVICE_APP }}"
+          echo "Iniciando deploy del servicio: ${{ secrets.ECS_SERVICE_COMBINED }}"
           aws ecs update-service \
             --cluster  ${{ secrets.ECS_CLUSTER }} \
-            --service  ${{ secrets.ECS_SERVICE_APP }} \
+            --service  ${{ secrets.ECS_SERVICE_COMBINED }} \
             --force-new-deployment \
             --query "service.{status:status, deployments:length(deployments)}" \
             --output table
-          echo "✅ Deploy de app iniciado en ECS"
+          echo "✅ Deploy iniciado en ECS"
 
-      # ── Step 11: Deploy service nginx ────────────────────────
-      - name: "Deploy — forzar nuevo despliegue netmonitor-nginx"
-        run: |
-          echo "Iniciando deploy del service: ${{ secrets.ECS_SERVICE_NGINX }}"
-          aws ecs update-service \
-            --cluster  ${{ secrets.ECS_CLUSTER }} \
-            --service  ${{ secrets.ECS_SERVICE_NGINX }} \
-            --force-new-deployment \
-            --query "service.{status:status, deployments:length(deployments)}" \
-            --output table
-          echo "✅ Deploy de nginx iniciado en ECS"
-
-      # ── Step 12: Verificar estabilidad del servicio ───────────
+      # ── Step 11: Verificar estabilidad del servicio ───────────
       - name: "Verificar estabilidad del cluster ECS"
         run: |
           echo "Esperando que el servicio alcance estado estable..."
           aws ecs wait services-stable \
             --cluster ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.ECS_SERVICE_APP }} ${{ secrets.ECS_SERVICE_NGINX }}
-          echo "✅ Servicios ECS estables y corriendo"
+            --services ${{ secrets.ECS_SERVICE_COMBINED }}
+          echo "✅ Servicio ECS estable y corriendo"
 
           # Mostrar estado final
           echo ""
           echo "── Estado final del cluster ──"
           aws ecs describe-services \
             --cluster  ${{ secrets.ECS_CLUSTER }} \
-            --services ${{ secrets.ECS_SERVICE_APP }} ${{ secrets.ECS_SERVICE_NGINX }} \
+            --services ${{ secrets.ECS_SERVICE_COMBINED }} \
             --query "services[].{Nombre:serviceName, Estado:status, Corriendo:runningCount, Deseado:desiredCount}" \
             --output table
